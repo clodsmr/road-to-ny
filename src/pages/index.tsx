@@ -42,7 +42,7 @@ export default function Home() {
             ])
           }
         >
-          Aggiungi spesa
+          Aggiungi spesa nuova
         </button>
       </section>
     </main>
