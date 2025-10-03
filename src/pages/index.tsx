@@ -1,18 +1,23 @@
+// pages/index.tsx
 import { useEffect } from "react";
 import { useRouter } from "next/router";
-import { getUser } from "../lib/session";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
-export default function Home() {
+export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
-    const user = getUser();
-    if (!user) {
-      router.push("/register"); // primo accesso → registrazione
-    } else {
-      router.push("/expenses"); // già loggato → vai alla pagina spese
-    }
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.push("/home"); // già loggato → vai alla home
+      } else {
+        router.push("/register"); // primo accesso → registrazione
+      }
+    });
+
+    return () => unsub();
   }, [router]);
 
-  return null; // oppure un piccolo loader
+  return null; // eventualmente puoi mettere un loader
 }

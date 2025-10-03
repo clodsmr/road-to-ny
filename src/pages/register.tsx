@@ -1,37 +1,43 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { saveUser, getUser } from "../lib/session";
+import { auth } from "@/lib/firebase";
+import { createUserWithEmailAndPassword, updateProfile, onAuthStateChanged } from "firebase/auth";
+import { createUserDoc } from "@/lib/users"; // il helper che abbiamo creato
 
 export default function Register() {
   const router = useRouter();
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    if (getUser()) router.push("/"); // Se già loggato → home
-  }, [router]);
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        // crea doc se non esiste
+        await createUserDoc(user.uid, user.displayName || email);
+        router.push("/home");
+      }
+    });
+    return () => unsub();
+  }, [router, email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMsg(null);
-    if (!name || !password || password !== confirm) {
+    if (!name || !email || !password || password !== confirm) {
       setMsg("Compila tutti i campi e assicurati che le password coincidano.");
       return;
     }
 
-    const res = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, password }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      saveUser(data.user); // Salva sessione
-      router.push("/");
-    } else {
-      setMsg(data.message);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(userCredential.user, { displayName: name });
+      await createUserDoc(userCredential.user.uid, name);
+      router.push("/home");
+    } catch (err: any) {
+      setMsg(err.message);
     }
   };
 
@@ -40,6 +46,7 @@ export default function Register() {
       <h1>Registrazione</h1>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <input placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} />
+        <input placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <input placeholder="Conferma Password" type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
         <button type="submit">Registrati</button>

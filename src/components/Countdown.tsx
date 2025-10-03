@@ -45,10 +45,10 @@ export default function Countdown({ targetDate }: CountdownProps) {
       boxShadow: '0 4px 20px rgba(225, 33, 138, 0.6)'
     }}
 >
-      <div>{days}:</div>
-      <div>{hours}:</div>
-      <div>{minutes}:</div>
-      <div>{seconds}</div>
+      <div>{days > 10 ? days : `0${days}`}:</div>
+      <div>{hours > 10 ? hours : `0${hours}`}:</div>
+      <div>{minutes > 10 ? minutes : `0${minutes}`}:</div>
+      <div>{seconds > 10 ? seconds : `0${seconds}`}</div>
     </div>
   );
 }

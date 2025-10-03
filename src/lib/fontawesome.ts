@@ -1,4 +1,6 @@
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faSignOutAlt } from '@fortawesome/free-solid-svg-icons'
+import { faSignOutAlt, faHome, faUser } from '@fortawesome/free-solid-svg-icons'
 
 library.add(faSignOutAlt)
+library.add(faHome)
+library.add(faUser)

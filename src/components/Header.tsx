@@ -1,53 +1,70 @@
-import React from "react";
-import { clearUser, getUser } from "../lib/session";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { auth } from "@/lib/firebase";
+import { signOut, onAuthStateChanged, User } from "firebase/auth";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 
 export default function Header() {
   const router = useRouter();
-  const user = getUser();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => setUser(u));
+    return () => unsub();
+  }, []);
 
   if (!user) return null;
 
-  const handleLogout = () => {
-    clearUser();
+  const handleLogout = async () => {
+    await signOut(auth);
     router.push("/login");
   };
 
-  const handleName = (name: string) => {
-    const letters = name.split('');
-    letters[0] = letters[0].toUpperCase() 
-    return letters.join('')
-  }
+  const handleName = (name: string | null) => {
+    if (!name) return "";
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  };
 
   return (
-    <header style={{
-      background: '#F18DBC',
-      color: 'white',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '12px 20px',
-    }}>
-        
-    <div style={{display: 'inline-flex'}}>
-      <img src="/logo-ny.png" alt="Logo" width={40} />
-      <h1 style={{ fontSize: '1.2rem', fontWeight: 600, fontFamily: "Homemade Apple", color: 'black', paddingTop: '5px'}}>{handleName(user.name)}</h1>
-    </div>
-     <button
+    <header
+      style={{
+        background: "#F18DBC",
+        color: "white",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "12px 20px",
+      }}
+    >
+      <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+        <img src="/logo-ny.png" alt="Logo" width={40} />
+        <h1
+          style={{
+            fontSize: "1.2rem",
+            fontWeight: 600,
+            fontFamily: "Homemade Apple",
+            color: "black",
+            paddingTop: "5px",
+          }}
+        >
+          {handleName(user.displayName)}
+        </h1>
+      </div>
+
+      <button
         onClick={handleLogout}
         style={{
-          background: 'rgba(255,255,255,0.2)',
-          border: 'none',
-          borderRadius: '50%',
-          padding: '6px',
-          cursor: 'pointer',
+          background: "rgba(255,255,255,0.2)",
+          border: "none",
+          borderRadius: "50%",
+          padding: "6px",
+          cursor: "pointer",
         }}
         title="Logout"
       >
-        <FontAwesomeIcon icon="sign-out-alt" size="lg" />
+        <FontAwesomeIcon icon={faSignOutAlt} size="lg" />
       </button>
-
     </header>
   );
 }
