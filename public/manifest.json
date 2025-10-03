@@ -1,10 +1,10 @@
 {
   "name": "Road to NY",
-  "short_name": "NY Trip",
+  "short_name": "NY",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
+  "theme_color": "#E0218A;",
   "icons": [
     {
       "src": "/icon-192.png",

@@ -294,7 +294,7 @@ export default function Profile() {
   </div>
 
   <p>Hai risparmiato {monthlyData.actualSaving}€ sui {predictedSaving}€ previsti questo mese</p>
-  <p style={{ fontFamily: 'Homemade Apple' }}>Per New York bastano 413€ al mese!!</p>
+  <p style={{ fontFamily: 'Homemade Apple' }}>Per New York bastano 143€ al mese!!</p>
 </section>
 
 

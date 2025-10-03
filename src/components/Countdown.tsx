@@ -29,22 +29,24 @@ export default function Countdown({ targetDate }: CountdownProps) {
 
   return (
     <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      gap: '3px',
-      fontSize: '3rem',
-      fontWeight: 'bold',
-      color: '#E0218A',
-      marginTop: '20px',
-      marginBottom: '20px',
-      backgroundColor: 'white',
-      width: '80vw',
-      height: '15vh',
-      alignItems: 'center',
-      borderRadius: '10px',
-      boxShadow: '0 4px 20px rgba(225, 33, 138, 0.6)'
-    }}
->
+        display: 'flex',
+        justifyContent: 'center',   // orizzontale
+        alignItems: 'center',       // verticale
+        width: '75%',               // occupa tutta la larghezza del contenitore
+        maxWidth: 400,               // limiti massimi su tablet/desktop
+        margin: '1rem auto',         // centra in orizzontale
+        padding: '15px',
+        gap: '8px',
+        fontSize: '2.5rem',
+        fontWeight: 'bold',
+        color: '#E0218A',
+        backgroundColor: 'white',
+        borderRadius: 15,
+        boxShadow: '0 4px 20px rgba(225, 33, 138, 0.6)',
+        height: '12vh'
+        }}>
+
+
       <div>{days > 10 ? days : `0${days}`}:</div>
       <div>{hours > 10 ? hours : `0${hours}`}:</div>
       <div>{minutes > 10 ? minutes : `0${minutes}`}:</div>
