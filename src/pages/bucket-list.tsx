@@ -1,11 +1,10 @@
-// pages/bucket-list.tsx
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Header from "@/components/Header";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faList, faHome, faUser } from "@fortawesome/free-solid-svg-icons";
 import { auth, db } from "@/lib/firebase";
-import { collection, addDoc, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, addDoc, getDocs, query, orderBy, doc, updateDoc } from "firebase/firestore";
 
 interface BucketItem {
   id?: string;
@@ -13,10 +12,10 @@ interface BucketItem {
   indirizzo: string;
   priorita: "bassa" | "media" | "alta";
   costo: number;
-  creator: string; // UID
+  creator: string;
 }
 
-// Mappa UID -> nome e immagine, come in home.tsx
+// Mappa UID -> nome e immagine
 const uidMap: Record<string, { name: string; img: string }> = {
   "nMQa2oFHJmcTMByW2rTcQitbSd02": { name: "Claudia", img: "/claudia.png" },
   "OUao5wz7B2WZEGfWCOD7djYAABA3": { name: "Marietta", img: "/marietta.png" },
@@ -39,6 +38,7 @@ export default function BucketList() {
   const [indirizzo, setIndirizzo] = useState("");
   const [priorita, setPriorita] = useState<"bassa" | "media" | "alta">("bassa");
   const [costo, setCosto] = useState<number>(0);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null); // <--- nuovo stato
 
   // --- Load user & bucket list ---
   useEffect(() => {
@@ -55,9 +55,7 @@ export default function BucketList() {
         const loaded: BucketItem[] = [];
         snapshot.forEach((doc) => loaded.push({ id: doc.id, ...(doc.data() as any) }));
 
-        // Ordinamento secondario per costo
         loaded.sort((a, b) => (a.priorita === b.priorita ? a.costo - b.costo : 0));
-
         setItems(loaded);
       } catch (err) {
         console.error("Errore caricamento bucket list:", err);
@@ -66,52 +64,62 @@ export default function BucketList() {
     return () => unsub();
   }, [router]);
 
-  // --- Salva nuovo item ---
+  // --- Salva o aggiorna item ---
   const saveItem = async () => {
     if (!user || !luogo || !indirizzo || !priorita) return;
 
     try {
-      const newItem: BucketItem = {
-        luogo,
-        indirizzo,
-        priorita,
-        costo,
-        creator: user.uid,
-      };
-      const docRef = await addDoc(collection(db, "bucketList"), newItem);
+      if (editingItemId) {
+        // --- Aggiorna item ---
+        const itemRef = doc(db, "bucketList", editingItemId);
+        await updateDoc(itemRef, { luogo, indirizzo, priorita, costo });
 
-      setItems((prev) => [...prev, { ...newItem, id: docRef.id }]);
+        setItems((prev) =>
+          prev.map((it) => (it.id === editingItemId ? { ...it, luogo, indirizzo, priorita, costo } : it))
+        );
+      } else {
+        // --- Nuovo item ---
+        const newItem: BucketItem = { luogo, indirizzo, priorita, costo, creator: user.uid };
+        const docRef = await addDoc(collection(db, "bucketList"), newItem);
+        setItems((prev) => [...prev, { ...newItem, id: docRef.id }]);
+      }
+
       setShowModal(false);
       setLuogo("");
       setIndirizzo("");
       setPriorita("bassa");
       setCosto(0);
+      setEditingItemId(null);
     } catch (err) {
       console.error("Errore salvataggio bucket list: ", err);
       alert("Errore durante il salvataggio: " + err);
     }
   };
 
-  // --- Ordina items per priorità ---
   const sortedItems = [...items].sort((a, b) => {
     const priorityOrder = { alta: 3, media: 2, bassa: 1 };
     return priorityOrder[b.priorita] - priorityOrder[a.priorita];
   });
+
+  // --- Apri modale per modifica ---
+  const openEditModal = (item: BucketItem) => {
+    setLuogo(item.luogo);
+    setIndirizzo(item.indirizzo);
+    setPriorita(item.priorita);
+    setCosto(item.costo);
+    setEditingItemId(item.id || null);
+    setShowModal(true);
+  };
 
   return (
     <>
       <Header />
       <main style={{ maxWidth: 480, margin: "0 auto", padding: 20, paddingBottom: "80px" }}>
         <span style={{ display: "inline-flex", alignItems: "center" }}>
-          <h2 style={{ fontFamily: "Homemade Apple", fontSize: "1.5rem", marginRight: 10 }}>
-            Lista dei desideri
-          </h2>
-          <button className="profile-btn" onClick={() => setShowModal(true)} style={{ marginBottom: 0 }}>
-            ➕
-          </button>
+          <h2 style={{ fontFamily: "Homemade Apple", fontSize: "1.5rem", marginRight: 10 }}>Lista dei desideri</h2>
+          <button className="profile-btn" onClick={() => setShowModal(true)} style={{ marginBottom: 0 }}>➕</button>
         </span>
 
-        {/* Lista items */}
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {sortedItems.map((item) => {
             const userInfo = uidMap[item.creator] || { name: "Unknown", img: "/placeholder.png" };
@@ -129,18 +137,8 @@ export default function BucketList() {
                   boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
                 }}
               >
-                {/* Priorità */}
-                <div
-                  style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: "50%",
-                    backgroundColor: priorityColor[item.priorita],
-                    marginRight: 10,
-                  }}
-                />
+                <div style={{ width: 16, height: 16, borderRadius: "50%", backgroundColor: priorityColor[item.priorita], marginRight: 10 }} />
 
-                {/* Luogo cliccabile */}
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.indirizzo)}`}
                   target="_blank"
@@ -150,11 +148,12 @@ export default function BucketList() {
                   {item.luogo}
                 </a>
 
-                {/* Foto creatore */}
+                {/* Clicca sull'immagine per modificare */}
                 <img
                   src={userInfo.img}
                   alt={userInfo.name}
-                  style={{ width: 32, height: 32, borderRadius: "50%", marginLeft: 10 }}
+                  style={{ width: 32, height: 32, borderRadius: "50%", marginLeft: 10, cursor: "pointer" }}
+                  onClick={() => openEditModal(item)}
                 />
               </div>
             );
@@ -166,8 +165,8 @@ export default function BucketList() {
       {showModal && (
         <div className="modal">
           <div>
-            <button className="close-btn" onClick={() => setShowModal(false)}>✖</button>
-            <h3>Aggiungi destinazione</h3>
+            <button className="close-btn" onClick={() => { setShowModal(false); setEditingItemId(null); }}>✖</button>
+            <h3>{editingItemId ? "Modifica destinazione" : "Aggiungi destinazione"}</h3>
             <input placeholder="Luogo" value={luogo} onChange={(e) => setLuogo(e.target.value)} />
             <input placeholder="Indirizzo" value={indirizzo} onChange={(e) => setIndirizzo(e.target.value)} />
             <select value={priorita} onChange={(e) => setPriorita(e.target.value as any)}>
@@ -175,13 +174,8 @@ export default function BucketList() {
               <option value="media">Media</option>
               <option value="alta">Alta</option>
             </select>
-            <input
-              type="number"
-              placeholder="Costo"
-              value={costo}
-              onChange={(e) => setCosto(parseFloat(e.target.value))}
-            />
-            <button className="save-btn" onClick={saveItem}>Salva</button>
+            <input type="number" placeholder="Costo" value={costo} onChange={(e) => setCosto(parseFloat(e.target.value))} />
+            <button className="save-btn" onClick={saveItem}>{editingItemId ? "Aggiorna" : "Salva"}</button>
           </div>
         </div>
       )}
@@ -199,40 +193,13 @@ export default function BucketList() {
         boxShadow: "0 -2px 5px rgba(0,0,0,0.2)"
       }}>
         <div style={{ width: '33.33%', justifyContent: 'center', display: 'flex' }}>
-          <button onClick={() => router.push("/home")} style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "white",
-            fontSize: "1.5rem",
-            borderBottom: router.pathname === '/home' ? '2px solid white' : 'none'
-          }}>
-            <FontAwesomeIcon icon={faHome} />
-          </button>
+          <button onClick={() => router.push("/home")} style={{ background: "none", border: "none", cursor: "pointer", color: "white", fontSize: "1.5rem", borderBottom: router.pathname === '/home' ? '2px solid white' : 'none' }}><FontAwesomeIcon icon={faHome} /></button>
         </div>
         <div style={{ width: '33.33%', justifyContent: 'center', display: 'flex' }}>
-          <button onClick={() => router.push("/bucket-list")} style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "white",
-            fontSize: "1.5rem",
-            borderBottom: router.pathname === '/bucket-list' ? '2px solid white' : 'none'
-          }}>
-            <FontAwesomeIcon icon={faList} />
-          </button>
+          <button onClick={() => router.push("/bucket-list")} style={{ background: "none", border: "none", cursor: "pointer", color: "white", fontSize: "1.5rem", borderBottom: router.pathname === '/bucket-list' ? '2px solid white' : 'none' }}><FontAwesomeIcon icon={faList} /></button>
         </div>
         <div style={{ width: '33.33%', justifyContent: 'center', display: 'flex' }}>
-          <button onClick={() => router.push("/profile")} style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            color: "white",
-            fontSize: "1.5rem",
-            borderBottom: router.pathname === '/profile' ? '2px solid white' : 'none'
-          }}>
-            <FontAwesomeIcon icon={faUser} />
-          </button>
+          <button onClick={() => router.push("/profile")} style={{ background: "none", border: "none", cursor: "pointer", color: "white", fontSize: "1.5rem", borderBottom: router.pathname === '/profile' ? '2px solid white' : 'none' }}><FontAwesomeIcon icon={faUser} /></button>
         </div>
       </nav>
     </>
