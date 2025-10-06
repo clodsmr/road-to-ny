@@ -59,16 +59,21 @@ export default function Home() {
           setExpenses(allExpenses);
 
           // --- Carica risparmi degli altri utenti ---
-          const users = ["Claudia", "Marietta", "Silvietta"];
-          const others = users.filter(name =>
-            name.toLowerCase() !== data.name?.toLowerCase() // considera il nome dell'utente loggato se presente
-          );
+          const userUIDs = {
+            Claudia: "nMQa2oFHJmcTMByW2rTcQitbSd02",
+            Marietta: "OUao5wz7B2WZEGfWCOD7djYAABA3",
+            Silvietta: "EeMS1W0ACIcTKjWO4I7IBfxTn5w1",
+          };
+
           const fetchedOtherSavings: { name: string; total: number }[] = [];
 
-          for (let otherName of others) {
-            // Fornisci un UID simulato o carica da DB reale
-            const otherDoc = await getDoc(doc(db, "users", otherName.toLowerCase()));
+          for (const [name, uid] of Object.entries(userUIDs)) {
+            // salta l'utente attualmente loggato
+            if (uid === u.uid) continue;
+
+            const otherDoc = await getDoc(doc(db, "users", uid));
             let otherTotal = 0;
+
             if (otherDoc.exists()) {
               const otherData = otherDoc.data();
               const monthly = otherData.monthlySavings || {};
@@ -76,7 +81,8 @@ export default function Home() {
                 otherTotal += m.actualSaving || 0;
               });
             }
-            fetchedOtherSavings.push({ name: otherName, total: otherTotal });
+
+            fetchedOtherSavings.push({ name, total: otherTotal });
           }
           setOtherSavings(fetchedOtherSavings);
         }
@@ -151,51 +157,67 @@ export default function Home() {
         {showSquinzie && (
           <div style={{ paddingTop: 50, height: '20vh', padding: '50px 30px', paddingBottom: '0px' }}>
             {otherSavings.map((o, i) => (
-  <section key={i} style={{ marginBottom: 65 }}>
-    <div style={{ position: 'relative', height: 15, background: 'white', borderRadius: 15 }}>
-      <div style={{
-        width: `${Math.min(o.total / 1000 * 100, 100)}%`,
-        height: '100%',
-        background: '#E0218A',
-        borderRadius: 15,
-        transition: 'width 0.3s ease'
-      }} />
+          <section key={i} style={{ marginBottom: 65 }}>
+            <div style={{ position: 'relative', height: 15, background: 'white', borderRadius: 15 }}>
+              <div style={{
+                width: `${Math.min(o.total / 1000 * 100, 100)}%`,
+                height: '100%',
+                background: '#E0218A',
+                borderRadius: 15,
+                transition: 'width 0.3s ease'
+              }} />
 
-      <div style={{
-        position: 'absolute',
-        left: `${Math.min(o.total / 1000 * 100, 100)}%`,
-        top: '-19px',
-        transform: 'translateX(-50%)'
-      }}>
-        <img src={`/${o.name.toLowerCase()}.png`} alt={o.name} style={{ width: 50, height: 50, borderRadius: '50%' }} />
-        <div style={{ textAlign: 'center', fontFamily: 'Homemade Apple', fontSize: '0.9rem', marginTop: 1, color: 'white' }}>{o.total}€</div>
-{/*         <button
-          style={{
-            marginTop: 4,
-            padding: '2px 6px',
-            fontSize: '0.7rem',
-            borderRadius: 4,
-            cursor: 'pointer'
-          }}
-          onClick={async () => {
-            try {
-              await fetch('/api/sendNotification', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ targetUid: o.uid })
-              });
-              alert("Notifica inviata!");
-            } catch (err) {
-              console.error(err);
-              alert("Errore invio notifica");
-            }
-          }}
-        >
-          📩
-        </button> */}
-      </div>
-    </div>
-  </section>
+              <div style={{
+                position: 'absolute',
+                left: `${Math.min(o.total / 1000 * 100, 100)}%`,
+                top: '-19px',
+                transform: 'translateX(-50%)'
+              }}>
+                <img src={`/${o.name.toLowerCase()}.png`} alt={o.name} style={{ width: 50, height: 50, borderRadius: '50%' }} />
+                <div style={{ textAlign: 'center', fontFamily: 'Homemade Apple', fontSize: '0.9rem', marginTop: 1, color: 'white' }}>{o.total}€</div>
+              </div>
+               <button
+                  style={{
+                    marginTop: 4,
+                    padding: "4px 8px",
+                    fontSize: "1rem",
+                    borderRadius: 30,
+                    cursor: "pointer",
+                    background: "#E0218A",
+                    color: "white",
+                    border: "none",
+                    position: 'absolute',
+                    right: '-19px',
+                    top: '35px'
+                  }}
+                  onClick={async () => {
+                    try {
+                      const uidMap: Record<string, string> = {
+                        Claudia: "nMQa2oFHJmcTMByW2rTcQitbSd02",
+                        Marietta: "OUao5wz7B2WZEGfWCOD7djYAABA3",
+                        Silvietta: "EeMS1W0ACIcTKjWO4I7IBfxTn5w1",
+                      };
+                      const targetUid = uidMap[o.name];
+                      if (!targetUid) return alert("UID non trovato");
+                      await fetch("/api/sendNotification", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ targetUid }),
+                      });
+                      alert("📩 Notifica inviata a " + o.name);
+                    } catch (err) {
+                      console.error(err);
+                      alert("Errore durante l’invio");
+                    }
+                  }}
+                >
+                  📩
+                </button>
+            </div>
+               
+
+          </section>
+          
 ))}
 
           </div>

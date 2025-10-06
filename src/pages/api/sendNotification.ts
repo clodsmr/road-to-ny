@@ -1,52 +1,41 @@
 // pages/api/sendNotification.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import admin from "firebase-admin";
+import { getFirestore } from "firebase-admin/firestore";
 
 if (!admin.apps.length) {
+  const serviceAccount = require("../../../serviceAccountKey.json");
   admin.initializeApp({
-    credential: admin.credential.cert(
-      JSON.parse(process.env.FIREBASE_ADMIN_CREDENTIALS || "{}")
-    ),
+    credential: admin.credential.cert(serviceAccount),
   });
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method === "POST") {
+const db = getFirestore();
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== "POST") return res.status(405).end("Method Not Allowed");
+
+  try {
     const { targetUid } = req.body;
+    if (!targetUid) return res.status(400).json({ error: "Missing targetUid" });
 
-    if (!targetUid) {
-      return res.status(400).json({ error: "targetUid richiesto" });
-    }
+    // recupera il token FCM dell'utente target
+    const userDoc = await db.collection("users").doc(targetUid).get();
+    const fcmToken = userDoc.data()?.fcmToken;
+    if (!fcmToken) return res.status(404).json({ error: "Token non trovato" });
 
-    const userDoc = await admin.firestore().doc(`users/${targetUid}`).get();
-    if (!userDoc.exists) {
-      return res.status(404).json({ error: "Utente non trovato" });
-    }
+    const message = {
+      notification: {
+        title: "Risparmia!!! 💰",
+        body: "È ora di mettere da parte qualche soldino o niente chuckino 😉",
+      },
+      token: fcmToken,
+    };
 
-    const userData = userDoc.data();
-    if (!userData?.fcmToken) {
-      return res
-        .status(404)
-        .json({ error: "Token FCM non presente per questo utente" });
-    }
-
-    try {
-      await admin.messaging().send({
-        token: userData.fcmToken,
-        notification: {
-          title: "Risparmia!",
-          body: "💸",
-        },
-      });
-      return res.status(200).json({ success: true });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: "Errore invio notifica" });
-    }
+    await admin.messaging().send(message);
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Errore invio notifica" });
   }
-
-  res.status(405).end();
 }
