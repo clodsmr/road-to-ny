@@ -55,6 +55,7 @@ export default function Profile() {
 
   // Form risparmio effettivo
   const [savingValue, setSavingValue] = useState(0);
+  const [savingAdd, setSavingAdd] = useState(true); // true = Metti, false = Togli
 
   const [savingTarget] = useState(143);
   const currentMonth = new Date().toISOString().slice(0, 7);
@@ -152,10 +153,12 @@ export default function Profile() {
 
   // --- Salva risparmio effettivo ---
     const saveSaving = async () => {
-    if (!user || !monthlyData || savingValue <= 0) return;
+    if (!user || !monthlyData || isNaN(parseFloat(savingValue as any))) return;
 
-    // Somma al risparmio esistente
-    const updated = { ...monthlyData, actualSaving: monthlyData.actualSaving + savingValue };
+    const amount = parseFloat(savingValue as any);
+    const updatedAmount = savingAdd ? monthlyData.actualSaving + amount : monthlyData.actualSaving - amount;
+
+    const updated = { ...monthlyData, actualSaving: updatedAmount };
     setMonthlyData(updated);
 
     const userRef = doc(db, "users", user.uid);
@@ -163,14 +166,22 @@ export default function Profile() {
 
     setShowSavingModal(false);
     setSavingValue(0);
+    setSavingAdd(true); // reset toggle
     showToast();
     };
+
 
 
   if (!user || !monthlyData) return null;
 
   const totalPredictedExpenses = predictedExpenses.reduce((acc, e) => acc + e.predicted, 0);
   const predictedSaving = predictedIncome.stipendio + predictedIncome.extra - totalPredictedExpenses;
+
+  const totalIncomePredicted = predictedIncome.stipendio + predictedIncome.extra;
+  const totalIncomeEff = monthlyData.income.stipendio + monthlyData.income.extra;
+  const totalExpensePred = predictedExpenses.reduce((acc, e) => acc + e.predicted, 0);
+  const totalExpenseEff = monthlyData.expenses.reduce((acc, e) => acc + (e.eff || 0), 0);
+
 
   return (
     <>
@@ -203,6 +214,14 @@ export default function Profile() {
                     <td>{monthlyData.income.extra}</td>
                 </tr>
                 </tbody>
+                <tfoot>
+                <tr style={{ fontWeight: "bold", borderTop: "1px solid #ccc" }}>
+                    <td>Totale</td>
+                    <td>{totalIncomePredicted}</td>
+                    <td>{totalIncomeEff}</td>
+                </tr>
+                </tfoot>
+
             </table>
           </div>
         </section>
@@ -234,6 +253,14 @@ export default function Profile() {
                     </tr>
                 ))}
                 </tbody>
+                <tfoot>
+                <tr style={{ fontWeight: "bold", borderTop: "1px solid #ccc" }}>
+                    <td>Totale</td>
+                    <td>{totalExpensePred}</td>
+                    <td>{totalExpenseEff}</td>
+                </tr>
+                </tfoot>
+
             </table>
           </div>
         </section>
@@ -352,16 +379,66 @@ export default function Profile() {
       )}
 
       {/* --- Modale Risparmio Effettivo --- */}
-      {showSavingModal && (
-        <div className="modal">
-          <div>
-            <button className="close-btn" onClick={() => setShowSavingModal(false)}>✖</button>
-            <h3>Aggiungi risparmio</h3>
-            <input type="number" value={savingValue} onChange={(e) => setSavingValue(parseFloat(e.target.value))} placeholder="Importo" />
+{showSavingModal && (
+  <div className="modal">
+    <div>
+      <button className="close-btn" onClick={() => setShowSavingModal(false)}>✖</button>
+      <h3>Aggiungi risparmio</h3>
+      <input type="number" value={savingValue} onChange={(e) => setSavingValue(parseFloat(e.target.value))} placeholder="Importo" />
+      <span
+      style={{
+          display: 'flex',
+          justifyContent:'space-between',
+          alignItems: 'center'
+        }}
+      >
+              {/* Switch Metti / Togli */}
+      <div
+        onClick={() => setSavingAdd(!savingAdd)}
+        style={{
+          width: 70,
+          height: 30,
+          borderRadius: 15,
+          background: savingAdd ? "#E0218A" : "#F18DBC",
+          position: "relative",
+          cursor: "pointer",
+          transition: "background 0.3s"
+        }}
+      >
+        <div
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: "50%",
+            background: "white",
+            position: "absolute",
+            top: 2,
+            left: savingAdd ? 2 : 40,
+            transition: "left 0.3s",
+          }}
+        />
+        <span
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: savingAdd ? 35 : 8,
+            transform: "translateY(-50%)",
+            fontSize: 12,
+            color: "white",
+            fontWeight: "bold",
+            pointerEvents: "none",
+          }}
+        >
+          {savingAdd ? "Metti" : "Togli"}
+        </span>
+      </div>
             <button className="save-btn" onClick={saveSaving}>Salva</button>
-          </div>
-        </div>
-      )}
+      </span>
+    </div>
+  </div>
+)}
+
+
 
       {/* --- Toast --- */}
       {toast && <div className="toast">{toast}</div>}
