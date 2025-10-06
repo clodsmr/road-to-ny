@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import Header from "@/components/Header";
 import Countdown from "@/components/Countdown";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHome, faUser, faChevronDown } from "@fortawesome/free-solid-svg-icons";
+import { faHome, faUser, faChevronDown, faList } from "@fortawesome/free-solid-svg-icons";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { requestPermissionAndToken, listenForegroundMessages } from "@/lib/fcm";
@@ -238,7 +238,7 @@ export default function Home() {
         alignItems: "center",
         boxShadow: "0 -2px 5px rgba(0,0,0,0.2)"
       }}>
-        <div style={{ width: '50%', justifyContent: 'center', display: 'flex' }}>
+        <div style={{ width: '33.33%', justifyContent: 'center', display: 'flex' }}>
           <button onClick={() => router.push("/home")} style={{
             background: "none",
             border: "none",
@@ -250,7 +250,19 @@ export default function Home() {
             <FontAwesomeIcon icon={faHome} />
           </button>
         </div>
-        <div style={{ width: '50%', justifyContent: 'center', display: 'flex' }}>
+        <div style={{ width: '33.33%', justifyContent: 'center', display: 'flex' }}>
+          <button onClick={() => router.push("/bucket-list")} style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "white",
+            fontSize: "1.5rem",
+            borderBottom: router.pathname === '/bucket-list' ? '2px solid white' : 'none'
+          }}>
+            <FontAwesomeIcon icon={faList} />
+          </button>
+        </div>
+        <div style={{ width: '33.33%', justifyContent: 'center', display: 'flex' }}>
           <button onClick={() => router.push("/profile")} style={{
             background: "none",
             border: "none",
@@ -263,6 +275,7 @@ export default function Home() {
           </button>
         </div>
       </nav>
+
     </>
   );
 }

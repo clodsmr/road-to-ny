@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Header from "@/components/Header";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHome, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faHome, faList, faUser } from "@fortawesome/free-solid-svg-icons";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 
@@ -444,50 +444,55 @@ export default function Profile() {
       {toast && <div className="toast">{toast}</div>}
 
       {/* Bottom nav */}
-      <nav
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          width: "100%",
-          height: "60px",
-          background: "#F18DBC",
-          display: "flex",
-          alignItems: "center",
-          boxShadow: "0 -2px 5px rgba(0,0,0,0.2)",
-        }}
-      >
-        <div style={{ width: "50%", justifyContent: "center", display: "flex" }}>
-          <button
-            onClick={() => router.push("/home")}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "white",
-              fontSize: "1.5rem",
-              borderBottom: router.pathname === "/home" ? "2px solid white" : "none",
-            }}
-          >
+        <nav style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        width: "100%",
+        height: "60px",
+        background: "#F18DBC",
+        display: "flex",
+        alignItems: "center",
+        boxShadow: "0 -2px 5px rgba(0,0,0,0.2)"
+        }}>
+        <div style={{ width: '33.33%', justifyContent: 'center', display: 'flex' }}>
+            <button onClick={() => router.push("/home")} style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "white",
+            fontSize: "1.5rem",
+            borderBottom: router.pathname === '/home' ? '2px solid white' : 'none'
+            }}>
             <FontAwesomeIcon icon={faHome} />
-          </button>
+            </button>
         </div>
-        <div style={{ width: "50%", justifyContent: "center", display: "flex" }}>
-          <button
-            onClick={() => router.push("/profile")}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "white",
-              fontSize: "1.5rem",
-              borderBottom: router.pathname === "/profile" ? "2px solid white" : "none",
-            }}
-          >
+        <div style={{ width: '33.33%', justifyContent: 'center', display: 'flex' }}>
+            <button onClick={() => router.push("/bucket-list")} style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "white",
+            fontSize: "1.5rem",
+            borderBottom: router.pathname === '/bucket-list' ? '2px solid white' : 'none'
+            }}>
+            <FontAwesomeIcon icon={faList} />
+            </button>
+        </div>
+        <div style={{ width: '33.33%', justifyContent: 'center', display: 'flex' }}>
+            <button onClick={() => router.push("/profile")} style={{
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "white",
+            fontSize: "1.5rem",
+            borderBottom: router.pathname === '/profile' ? '2px solid white' : 'none'
+            }}>
             <FontAwesomeIcon icon={faUser} />
-          </button>
+            </button>
         </div>
-      </nav>
+        </nav>
+
     </>
   );
 }
